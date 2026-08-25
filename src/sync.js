@@ -134,7 +134,9 @@ async function stageIntake(botUserId) {
   for (const channel of CHANNELS) {
     const messages = await collectRecentMessages(channel, oldest);
     for (const msg of messages) {
-      if (!msg.text?.includes(OPSTEAM_MENTION)) continue;
+      // A request is either an @opsteam usergroup mention or a direct @-mention of this bot
+      // (people may tag the bot by mistake since it's named "Ops Team").
+      if (!msg.text?.includes(OPSTEAM_MENTION) && !msg.text?.includes(`<@${botUserId}>`)) continue;
       if (parseFloat(msg.ts) < GO_LIVE_TS) continue;
       if (msg.user === botUserId || msg.bot_id) continue;
       if (botReacted(msg, 'eyes', botUserId) || anyReaction(msg, 'eyes') || anyReaction(msg, 'white_check_mark')) continue;
