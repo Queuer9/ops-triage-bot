@@ -1,0 +1,30 @@
+name: Ops request triage
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # every 5 minutes (GitHub may add a few minutes of delay under load)
+  workflow_dispatch: {} # allows manual "Run workflow" for testing
+
+concurrency:
+  group: ops-triage
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sync Slack <-> Asana
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          ASANA_TOKEN: ${{ secrets.ASANA_TOKEN }}
+          # Comma-separated channel IDs to watch; the bot must be a member of each.
+          SLACK_CHANNEL_IDS: "C09RRCML3QQ"
+        run: node src/sync.js

@@ -1,0 +1,32 @@
+{
+  "display_information": {
+    "name": "Ops Triage",
+    "description": "Turns @opsteam mentions into Asana tasks and reports status back in-thread.",
+    "background_color": "#1f6f6b"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Ops Triage",
+      "always_online": true
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "channels:history",
+        "channels:read",
+        "groups:history",
+        "groups:read",
+        "chat:write",
+        "reactions:read",
+        "reactions:write",
+        "users:read"
+      ]
+    }
+  },
+  "settings": {
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
