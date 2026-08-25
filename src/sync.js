@@ -116,11 +116,16 @@ async function collectRecentMessages(channel, oldest) {
   for (const msg of history.messages || []) {
     out.push({ ...msg, channel, thread_ts: msg.thread_ts || msg.ts });
     if (msg.reply_count > 0) {
-      const replies = await slackGet('conversations.replies', {
-        channel, ts: msg.ts, oldest: String(oldest), limit: 100,
-      });
-      for (const reply of replies.messages || []) {
-        if (reply.ts !== msg.ts) out.push({ ...reply, channel, thread_ts: msg.ts });
+      try {
+        const replies = await slackGet('conversations.replies', {
+          channel, ts: msg.ts, oldest: String(oldest), limit: 100,
+        });
+        for (const reply of replies.messages || []) {
+          if (reply.ts !== msg.ts) out.push({ ...reply, channel, thread_ts: msg.ts });
+        }
+      } catch (e) {
+        // e.g. thread_not_found when all replies were deleted but reply_count is stale
+        console.warn(`Skipping replies of ${msg.ts} in ${channel}: ${e.message}`);
       }
     }
   }
@@ -141,6 +146,7 @@ async function stageIntake(botUserId) {
       if (msg.user === botUserId || msg.bot_id) continue;
       if (botReacted(msg, 'eyes', botUserId) || anyReaction(msg, 'eyes') || anyReaction(msg, 'white_check_mark')) continue;
 
+      try {
       const permalink = (await slackGet('chat.getPermalink', { channel, message_ts: msg.ts })).permalink;
       let requester = msg.user;
       try {
@@ -175,6 +181,9 @@ async function stageIntake(botUserId) {
       });
       created++;
       console.log(`Intake: created task ${task.data.gid} for message ${msg.ts} in ${channel}`);
+      } catch (e) {
+        console.warn(`Intake failed for message ${msg.ts} in ${channel}, will retry next run: ${e.message}`);
+      }
     }
   }
   return created;
@@ -190,7 +199,17 @@ async function stageAnnounce(botUserId) {
     const { channel, threadTs } = parseNotes(task.notes || '');
     if (!channel || !threadTs) continue;
 
-    const replies = await slackGet('conversations.replies', { channel, ts: threadTs, limit: 100 });
+    let replies = { messages: [] };
+    try {
+      replies = await slackGet('conversations.replies', { channel, ts: threadTs, limit: 100 });
+    } catch (e) {
+      // thread_not_found = no replies exist, so definitely not announced yet; anything else, skip
+      // this task rather than risk double-posting on a transient read failure.
+      if (!e.message.includes('thread_not_found')) {
+        console.warn(`Skipping announce for task ${task.gid}: ${e.message}`);
+        continue;
+      }
+    }
     const alreadyAnnounced = (replies.messages || []).some(
       m => (m.user === botUserId || m.bot_id) && m.text?.includes(ANNOUNCE_MARKER)
     );
@@ -204,14 +223,18 @@ async function stageAnnounce(botUserId) {
         who = `<@${lookup.user.id}>`;
       } catch { /* no Slack account with that email — use the name */ }
     }
-    await slackPost('chat.postMessage', {
-      channel,
-      thread_ts: threadTs,
-      text: `:eyes: This has been ${ANNOUNCE_MARKER} ${who} and will be done by ${formatDue(task.due_on)}. Track it here: ${task.permalink_url}`,
-      unfurl_links: false,
-    });
-    announced++;
-    console.log(`Announce: notified thread ${threadTs} for task ${task.gid} (due ${task.due_on})`);
+    try {
+      await slackPost('chat.postMessage', {
+        channel,
+        thread_ts: threadTs,
+        text: `:eyes: This has been ${ANNOUNCE_MARKER} ${who} and will be done by ${formatDue(task.due_on)}. Track it here: ${task.permalink_url}`,
+        unfurl_links: false,
+      });
+      announced++;
+      console.log(`Announce: notified thread ${threadTs} for task ${task.gid} (due ${task.due_on})`);
+    } catch (e) {
+      console.warn(`Announce failed for task ${task.gid}, will retry next run: ${e.message}`);
+    }
   }
   return announced;
 }
@@ -226,6 +249,7 @@ async function stageComplete(botUserId) {
     const { channel, messageTs } = parseNotes(task.notes || '');
     if (!channel || !messageTs) continue;
 
+    try {
     const msg = (await slackGet('reactions.get', { channel, timestamp: messageTs, full: 'true' })).message;
     if (botReacted(msg, 'white_check_mark', botUserId)) continue;
 
@@ -237,6 +261,9 @@ async function stageComplete(botUserId) {
     });
     checked++;
     console.log(`Complete: ✅ added (and 👀 removed) for task ${task.gid} on message ${messageTs}`);
+    } catch (e) {
+      console.warn(`Completion marking failed for task ${task.gid}, will retry next run: ${e.message}`);
+    }
   }
   return checked;
 }
