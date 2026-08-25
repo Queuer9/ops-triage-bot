@@ -211,7 +211,7 @@ async function stageAnnounce(botUserId) {
       unfurl_links: false,
     });
     announced++;
-    console.log(`Announce: notified thread ${threadTs} for task ${task.gid} (${firstName}, ${task.due_on})`);
+    console.log(`Announce: notified thread ${threadTs} for task ${task.gid} (due ${task.due_on})`);
   }
   return announced;
 }
