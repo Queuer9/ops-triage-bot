@@ -16,7 +16,7 @@ It's stateless: the bot's own reactions and its "picked up by" reply are the ded
 1. Go to https://api.slack.com/apps → **Create New App** → **From a manifest** → pick the Talos workspace.
 2. Paste the contents of [`slack-app-manifest.json`](slack-app-manifest.json) and create the app.
 3. **Install to Workspace** (Settings → Install App) and copy the **Bot User OAuth Token** (starts `xoxb-`).
-4. In Slack, invite the bot to every channel it should watch: in **#ops**, type `/invite @Ops Triage`. (It can only see channels it's a member of.)
+4. In Slack, invite the bot to every channel it should watch: in **#ops**, type `/invite @Ops Team`. (It can only see channels it's a member of.)
 
 ### 2. Create the Asana token
 1. Asana → https://app.asana.com/0/my-apps → **Create new token** (a Personal Access Token).
