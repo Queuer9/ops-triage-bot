@@ -25,6 +25,7 @@ const CHANNELS = (process.env.SLACK_CHANNEL_IDS || 'C09RRCML3QQ').split(',').map
 const OPSTEAM_MENTION = 'subteam^S0BN2FK81TR'; // raw form of an @opsteam mention in message text
 const ASANA_PROJECT = '1217818788597298';      // "Ops Requests"
 const TRIAGE_SECTION = '1217818788622610';     // "📥 Triage"
+const DONE_SECTION = '1217818789017964';       // "✅ Done" — cards dragged here count as complete
 const GO_LIVE_TS = 1787655600;                 // 25 Aug 2026 ~12:00 BST — never ingest anything older
 const LOOKBACK_SECONDS = 24 * 60 * 60;         // scan window; reactions dedupe repeat scans
 const ANNOUNCE_MARKER = 'picked up by';        // dedupe marker phrase in the bot's thread reply
@@ -75,6 +76,11 @@ function anyReaction(message, emoji) {
   return (message.reactions || []).some(r => r.name === emoji);
 }
 
+function isDone(task) {
+  // Completed tick OR dragged into the "✅ Done" column — the board treats both as done.
+  return task.completed || (task.memberships || []).some(m => m.section?.gid === DONE_SECTION);
+}
+
 function parseNotes(notes) {
   const grab = key => (notes.match(new RegExp(`^${key}: (.+)$`, 'm')) || [])[1]?.trim();
   return {
@@ -98,7 +104,7 @@ async function listProjectTasks(params = {}) {
   do {
     const body = await asana(`/projects/${ASANA_PROJECT}/tasks?` + new URLSearchParams({
       limit: '100',
-      opt_fields: 'name,notes,completed,assignee.name,assignee.email,due_on,permalink_url',
+      opt_fields: 'name,notes,completed,assignee.name,assignee.email,due_on,permalink_url,memberships.section.gid',
       ...params,
       ...(offset ? { offset } : {}),
     }).toString());
@@ -195,6 +201,7 @@ async function stageAnnounce(botUserId) {
   let announced = 0;
   const tasks = await listProjectTasks({ completed_since: 'now' }); // incomplete only
   for (const task of tasks) {
+    if (isDone(task)) continue; // no point announcing a task that's already done
     if (!task.assignee || !task.due_on) continue;
     const { channel, threadTs } = parseNotes(task.notes || '');
     if (!channel || !threadTs) continue;
@@ -245,7 +252,7 @@ async function stageComplete(botUserId) {
   let checked = 0;
   const tasks = await listProjectTasks(); // includes completed
   for (const task of tasks) {
-    if (!task.completed) continue;
+    if (!isDone(task)) continue;
     const { channel, messageTs } = parseNotes(task.notes || '');
     if (!channel || !messageTs) continue;
 
