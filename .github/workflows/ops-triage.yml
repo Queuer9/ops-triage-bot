@@ -28,3 +28,5 @@ jobs:
           # Comma-separated channel IDs to watch; the bot must be a member of each.
           SLACK_CHANNEL_IDS: "C09RRCML3QQ"
         run: node src/sync.js
+
+# touch: force workflow registration
