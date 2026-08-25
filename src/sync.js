@@ -13,6 +13,11 @@
  * Optional env: SLACK_CHANNEL_IDS (comma-separated, default C09RRCML3QQ = #ops).
  */
 
+// Until both secrets are configured in the repo, do nothing (quietly green) rather than fail every run.
+if (!process.env.SLACK_BOT_TOKEN || !process.env.ASANA_TOKEN) {
+  console.log('NOT CONFIGURED YET: add SLACK_BOT_TOKEN and ASANA_TOKEN as repository secrets (see README). Skipping run.');
+  process.exit(0);
+}
 const SLACK_TOKEN = required('SLACK_BOT_TOKEN');
 const ASANA_TOKEN = required('ASANA_TOKEN');
 
