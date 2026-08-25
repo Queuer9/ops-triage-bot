@@ -1,12 +1,12 @@
 {
   "display_information": {
-    "name": "Ops Team",
+    "name": "Ops Bot",
     "description": "Turns @opsteam mentions into Asana tasks and reports status back in-thread.",
     "background_color": "#1f6f6b"
   },
   "features": {
     "bot_user": {
-      "display_name": "Ops Team",
+      "display_name": "Ops Bot",
       "always_online": true
     }
   },
