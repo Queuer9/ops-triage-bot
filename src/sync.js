@@ -98,7 +98,7 @@ async function listProjectTasks(params = {}) {
   do {
     const body = await asana(`/projects/${ASANA_PROJECT}/tasks?` + new URLSearchParams({
       limit: '100',
-      opt_fields: 'name,notes,completed,assignee.name,due_on,permalink_url',
+      opt_fields: 'name,notes,completed,assignee.name,assignee.email,due_on,permalink_url',
       ...params,
       ...(offset ? { offset } : {}),
     }).toString());
@@ -196,11 +196,18 @@ async function stageAnnounce(botUserId) {
     );
     if (alreadyAnnounced) continue;
 
-    const firstName = task.assignee.name.split(' ')[0];
+    // Prefer a real @-mention (matched by email); fall back to the plain first name.
+    let who = task.assignee.name.split(' ')[0];
+    if (task.assignee.email) {
+      try {
+        const lookup = await slackGet('users.lookupByEmail', { email: task.assignee.email });
+        who = `<@${lookup.user.id}>`;
+      } catch { /* no Slack account with that email — use the name */ }
+    }
     await slackPost('chat.postMessage', {
       channel,
       thread_ts: threadTs,
-      text: `:eyes: This has been ${ANNOUNCE_MARKER} ${firstName} — due ${formatDue(task.due_on)}. Track it here: ${task.permalink_url}`,
+      text: `:eyes: This has been ${ANNOUNCE_MARKER} ${who} and will be done by ${formatDue(task.due_on)}. Track it here: ${task.permalink_url}`,
       unfurl_links: false,
     });
     announced++;
