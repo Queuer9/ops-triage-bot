@@ -1,6 +1,8 @@
 # Ops Triage Bot
 
-Turns `@opsteam` mentions in Slack into tasks on the Asana **Ops Requests** board, and reports progress back to the original Slack thread. Runs as a **Cloudflare Worker on a 1-minute cron** — no server to maintain. (A GitHub Actions workflow remains as a manually-triggered fallback.)
+Turns `@opsteam` mentions in Slack into tasks on the Asana **Ops Requests** board, and reports progress back to the original Slack thread. Runs as a **Cloudflare Worker, synced every minute by a self-re-arming Durable Object alarm** — no server to maintain. (A GitHub Actions workflow remains as a manually-triggered fallback.)
+
+> Why an alarm and not a cron trigger? Cloudflare cron triggers on this account register fine (dashboard even shows a next-run time) but never execute — confirmed over 30+ minutes of tailing across API- and dashboard-created triggers. A cron trigger is still configured in case it ever wakes up; the Durable Object alarm in `src/worker.js` is the real driver. If the alarm loop ever stops, hit `/arm?key=<TRIGGER_KEY>` to restart it, or `/run?key=<TRIGGER_KEY>` for a one-off sync.
 
 ## What it does
 
@@ -23,9 +25,11 @@ One-time, from this folder:
 
 ```
 npx wrangler login                    # opens browser to authorize
-npx wrangler deploy                   # deploys the worker + 1-minute cron
+npx wrangler deploy                   # deploys the worker
 npx wrangler secret put SLACK_BOT_TOKEN   # paste the xoxb- bot token
-npx wrangler secret put ASANA_TOKEN       # paste the Asana PAT
+npx wrangler secret put ASANA_TOKEN       # paste the Asana Personal Access Token (NOT an OAuth client secret)
+npx wrangler secret put TRIGGER_KEY       # any long random string, protects /run and /arm
+curl "https://<worker-url>/arm?key=<TRIGGER_KEY>"   # start the minute-by-minute alarm loop
 ```
 
 After code changes: `npx wrangler deploy`. Live logs: `npx wrangler tail`.

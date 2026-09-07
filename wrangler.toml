@@ -1,10 +1,10 @@
 name = "ops-triage-bot"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
-workers_dev = false # cron-only worker, no public URL
+workers_dev = true
 
 [triggers]
-crons = ["* * * * *"] # every minute
+crons = ["* * * * *"]
 
 [vars]
 # Comma-separated Slack channel IDs to watch; the bot must be a member of each.
@@ -12,3 +12,10 @@ SLACK_CHANNEL_IDS = "C09RRCML3QQ"
 
 [observability]
 enabled = true
+
+[durable_objects]
+bindings = [{ name = "SCHEDULER", class_name = "Scheduler" }]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Scheduler"]
