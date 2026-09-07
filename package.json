@@ -1,0 +1,12 @@
+{
+  "name": "ops-triage-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Slack @opsteam mentions -> Asana Ops Requests board, with in-thread status updates",
+  "scripts": {
+    "sync": "node src/sync.js",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  }
+}
