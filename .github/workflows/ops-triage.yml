@@ -1,9 +1,9 @@
 name: Ops request triage
 
+# Manual fallback only — the live bot runs as a Cloudflare Worker on a 1-minute cron.
+# (GitHub throttled the old cron schedule to ~3-hour gaps; don't re-add it while the Worker is live.)
 on:
-  schedule:
-    - cron: "*/5 * * * *" # every 5 minutes (GitHub may add a few minutes of delay under load)
-  workflow_dispatch: {} # allows manual "Run workflow" for testing
+  workflow_dispatch: {} # manual "Run workflow" only
 
 concurrency:
   group: ops-triage
