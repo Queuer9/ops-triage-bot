@@ -1,6 +1,7 @@
 name = "ops-triage-bot"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
+workers_dev = false # cron-only worker, no public URL
 
 [triggers]
 crons = ["* * * * *"] # every minute
