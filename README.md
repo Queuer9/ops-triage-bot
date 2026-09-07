@@ -2,7 +2,7 @@
 
 Turns `@opsteam` mentions in Slack into tasks on the Asana **Ops Requests** board, and reports progress back to the original Slack thread. Runs as a **Cloudflare Worker, synced every minute by a self-re-arming Durable Object alarm** — no server to maintain. (A GitHub Actions workflow remains as a manually-triggered fallback.)
 
-> Why an alarm and not a cron trigger? Cloudflare cron triggers on this account register fine (dashboard even shows a next-run time) but never execute — confirmed over 30+ minutes of tailing across API- and dashboard-created triggers. A cron trigger is still configured in case it ever wakes up; the Durable Object alarm in `src/worker.js` is the real driver. If the alarm loop ever stops, hit `/arm?key=<TRIGGER_KEY>` to restart it, or `/run?key=<TRIGGER_KEY>` for a one-off sync.
+> Two redundant schedulers run deliberately: a Cloudflare cron trigger (fires ~:51 each minute) and a self-re-arming Durable Object alarm (~:11 each minute). The cron alone proved untrustworthy — on this fresh account it registered fine but didn't execute at all for the first hours (API- and dashboard-created alike), only waking long after a dashboard re-creation. Runs are staggered, finish in seconds, and the reaction-based dedupe makes double-processing harmless, so the redundancy costs nothing and either scheduler keeps the bot alive if the other dies. If the alarm loop ever stops, hit `/arm?key=<TRIGGER_KEY>` to restart it; `/run?key=<TRIGGER_KEY>` does a one-off sync.
 
 ## What it does
 
