@@ -36,6 +36,7 @@ After code changes: `npx wrangler deploy`. Live logs: `npx wrangler tail`.
 
 The tokens come from:
 - **Slack:** https://api.slack.com/apps → Ops Bot → OAuth & Permissions → Bot User OAuth Token (`xoxb-`). Scopes are defined in [`slack-app-manifest.json`](slack-app-manifest.json). The bot must be `/invite`d to every watched channel.
+  The same Slack app also posts the invoice checker's cards in #invoice-approvals (Talos-Network/invoice-checker), which is why it has `files:write`. **The token is shared: if it is ever regenerated, update both tools.**
 - **Asana:** https://app.asana.com/0/my-apps → personal access token from an account that can edit the Ops Requests project.
 
 ## Configuration
